@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -12,13 +13,14 @@ const (
 	templatesUrl = "web/templates"
 	indexUrl     = "web/templates/index"
 	assetsUrl    = "web/assets"
+	MediaUrl     = "web/media"
 )
 
 func handleRedirect(responseWriter http.ResponseWriter, request *http.Request) {
 	http.Redirect(responseWriter, request, "/upload", http.StatusFound)
 }
 
-func (receiver *Server) handleUpload() func(http.ResponseWriter, *http.Request) {
+func (receiver *Server) handleUploadPage() func(http.ResponseWriter, *http.Request) {
 	var (
 		tpl *template.Template
 		err error
@@ -59,5 +61,11 @@ func (receiver *Server) handleFavicon() func(http.ResponseWriter, *http.Request)
 		if err != nil {
 			log.Print(err)
 		}
+	}
+}
+
+func (receiver *Server) handleUploading() func(http.ResponseWriter, *http.Request) {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		fmt.Fprintf(writer, "success upload")
 	}
 }
