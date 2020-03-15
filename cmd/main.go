@@ -3,19 +3,40 @@ package main
 import (
 	"flag"
 	"github.com/burhon94/bFilesSvc.git/cmd/app/server"
+	"github.com/burhon94/bFilesSvc.git/pkg/servces"
 	"github.com/burhon94/bdi/pkg/di"
 	"github.com/gorilla/mux"
+	"log"
 	"net"
 )
 
+const (
+	ENV_HOST = "HOST"
+	ENV_PORT = "PORT"
+)
+
 var (
-	hostFlag = flag.String("host", "0.0.0.0", "Server host")
-	portFlag = flag.String("port", "9999", "Server host")
+	hostFlag = flag.String("host", "", "Server host")
+	portFlag = flag.String("port", "", "Server host")
 )
 
 func main() {
 	flag.Parse()
-	addr := net.JoinHostPort(*hostFlag, *portFlag)
+	log.Print("Settings host")
+	host, ok := servces.EnvOrFlag(ENV_HOST, hostFlag)
+	if !ok {
+		panic("can't setting host")
+	}
+
+	log.Print("Settings port")
+	port, ok := servces.EnvOrFlag(ENV_PORT, portFlag)
+	if !ok {
+		panic("can't setting port")
+	}
+	log.Print("host and port setting successfully")
+
+	addr := net.JoinHostPort(host, port)
+	log.Printf("server will start on: %s", addr)
 	start(addr)
 }
 
