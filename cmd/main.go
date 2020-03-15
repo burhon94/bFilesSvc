@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"github.com/burhon94/bFilesSvc.git/cmd/app/server"
-	"github.com/burhon94/bFilesSvc.git/pkg/servces"
+	"github.com/burhon94/bFilesSvc/cmd/app/server"
+	"github.com/burhon94/bFilesSvc/pkg/servces"
 	"github.com/burhon94/bdi/pkg/di"
 	"github.com/gorilla/mux"
 	"log"

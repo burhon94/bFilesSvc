@@ -1,11 +1,13 @@
 package server
 
 import (
-	"fmt"
+	"github.com/burhon94/bFilesSvc/pkg/resposes"
+	"github.com/burhon94/bFilesSvc/pkg/servces"
 	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"path"
 	"path/filepath"
 )
 
@@ -14,6 +16,8 @@ const (
 	indexUrl     = "web/templates/index"
 	assetsUrl    = "web/assets"
 	MediaUrl     = "web/media"
+
+	multipartMaxBytes = 10 * 1024 * 1024
 )
 
 func handleRedirect(responseWriter http.ResponseWriter, request *http.Request) {
@@ -35,13 +39,7 @@ func (receiver *Server) handleUploadPage() func(http.ResponseWriter, *http.Reque
 	}
 	return func(writer http.ResponseWriter, request *http.Request) {
 
-		data := struct {
-			Title string
-		}{
-			Title: "Uploader File",
-		}
-
-		err = tpl.Execute(writer, data)
+		err = tpl.Execute(writer, struct { }{})
 		if err != nil {
 			log.Print(err)
 			http.Error(writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -66,6 +64,38 @@ func (receiver *Server) handleFavicon() func(http.ResponseWriter, *http.Request)
 
 func (receiver *Server) handleUploading() func(http.ResponseWriter, *http.Request) {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		fmt.Fprintf(writer, "success upload")
+
+		err := request.ParseMultipartForm(multipartMaxBytes)
+		if err != nil {
+			resposes.BadRequest(err, writer)
+			return
+		}
+
+		uploadedFiles := ""
+		formFiles := request.MultipartForm
+		files := formFiles.File
+
+		for _, file := range files["files"] {
+			contentType := path.Ext(file.Filename)
+			openFile, err := file.Open()
+			if err != nil {
+				log.Printf("can't create file: %v", err)
+				continue
+			}
+
+			uploadedFiles, err = servces.SaveFile(openFile, contentType)
+			if err != nil {
+				log.Printf("can't save file: %v", err)
+				continue
+			}
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
+		_, err = writer.Write([]byte(uploadedFiles))
+		if err != nil {
+			resposes.InternalServerError(writer, err)
+		}
+
+		http.Redirect(writer, request, "/upload", http.StatusFound)
 	}
 }
