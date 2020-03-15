@@ -6,9 +6,11 @@ import (
 	"net/http"
 )
 
-func (receiver *Server) GorillaInitRoutes(addr string) {
+func (receiver *Server) GorillaInit(addr string) {
 	router := mux.NewRouter()
-	router.HandleFunc("/", indexHandler)
+	router.HandleFunc("/", handleRedirect)
+	router.HandleFunc("/upload", receiver.handleUpload())
+	router.HandleFunc("/favicon.ico", receiver.handleFavicon())
 
 	http.Handle("/", router)
 	fmt.Println("Server is listening...")

@@ -14,7 +14,7 @@ func NewServer(gRouter *mux.Router) *Server {
 }
 
 func (receiver *Server) Start(addr string)  {
-	receiver.GorillaInitRoutes(addr)
+	receiver.GorillaInit(addr)
 }
 
 func (receiver *Server) ServeHTTP(w http.ResponseWriter, r *http.Request)  {
