@@ -16,6 +16,9 @@ func (receiver *Server) GorillaInit(addr string) {
 
 	//get files from media dir
 	router.HandleFunc("/media", http.StripPrefix("/media", http.FileServer(http.Dir(MediaUrl))).ServeHTTP)
+	//get file
+	router.PathPrefix("/media/").Handler(http.StripPrefix("/media/", http.FileServer(http.Dir(MediaUrl))))
+	router.PathPrefix("/").HandlerFunc(receiver.handleGetFile())
 
 	http.Handle("/", router)
 	fmt.Println("Server is listening...")

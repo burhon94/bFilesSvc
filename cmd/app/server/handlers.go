@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -97,5 +98,23 @@ func (receiver *Server) handleUploading() func(http.ResponseWriter, *http.Reques
 		}
 
 		http.Redirect(writer, request, "/upload", http.StatusFound)
+	}
+}
+
+func (receiver *Server) handleGetFile() func(http.ResponseWriter, *http.Request) {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		fileName := strings.TrimPrefix(request.RequestURI, "/")
+
+		file, err := ioutil.ReadFile(filepath.Join(MediaUrl, fileName))
+		if err != nil {
+			resposes.BadRequest(err, writer)
+			return
+		}
+
+		_, err = writer.Write(file)
+		if err != nil {
+			resposes.InternalServerError(writer, err)
+			return
+		}
 	}
 }
