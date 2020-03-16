@@ -8,17 +8,12 @@ import (
 
 func (receiver *Server) GorillaInit(addr string) {
 	router := mux.NewRouter()
-	router.HandleFunc("/", handleRedirect)
-	router.HandleFunc("/upload", receiver.handleUploadPage())
-	router.HandleFunc("/favicon.ico", receiver.handleFavicon())
-	router.HandleFunc("/uploading", receiver.handleUploading())
+	router.HandleFunc("/api/health", receiver.handlerRespHealth()).Methods("get")
 
-
-	//get files from media dir
-	router.HandleFunc("/media", http.StripPrefix("/media", http.FileServer(http.Dir(MediaUrl))).ServeHTTP)
+	//post files
+	router.HandleFunc("/api/files/", receiver.handleUploading()).Methods("post")
 	//get file
-	router.PathPrefix("/media/").Handler(http.StripPrefix("/media/", http.FileServer(http.Dir(MediaUrl))))
-	router.PathPrefix("/").HandlerFunc(receiver.handleGetFile())
+	router.PathPrefix("/api/files/").HandlerFunc(receiver.handleGetFile()).Methods("get")
 
 	http.Handle("/", router)
 	fmt.Println("Server is listening...")

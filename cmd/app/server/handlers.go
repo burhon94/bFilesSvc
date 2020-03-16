@@ -1,9 +1,9 @@
 package server
 
 import (
+	"encoding/json"
 	"github.com/burhon94/bFilesSvc/pkg/resposes"
 	"github.com/burhon94/bFilesSvc/pkg/servces"
-	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,52 +13,21 @@ import (
 )
 
 const (
-	templatesUrl = "web/templates"
-	indexUrl     = "web/templates/index"
-	assetsUrl    = "web/assets"
-	MediaUrl     = "web/media"
+	MediaUrl = "web/media"
 
 	multipartMaxBytes = 10 * 1024 * 1024
 )
 
-func handleRedirect(responseWriter http.ResponseWriter, request *http.Request) {
-	http.Redirect(responseWriter, request, "/upload", http.StatusFound)
+type fileStruct struct {
+	FileName string `json:"fileName"`
 }
 
-func (receiver *Server) handleUploadPage() func(http.ResponseWriter, *http.Request) {
-	var (
-		tpl *template.Template
-		err error
-	)
 
-	tpl, err = template.ParseFiles(
-		filepath.Join(indexUrl, "index.gohtml"),
-		filepath.Join(templatesUrl, "base.gohtml"),
-	)
-	if err != nil {
-		panic(err)
-	}
+func (receiver *Server) handlerRespHealth() func(writer http.ResponseWriter, request *http.Request) {
 	return func(writer http.ResponseWriter, request *http.Request) {
-
-		err = tpl.Execute(writer, struct { }{})
+		_, err := writer.Write([]byte("ok"))
 		if err != nil {
-			log.Print(err)
-			http.Error(writer, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-	}
-}
-
-func (receiver *Server) handleFavicon() func(http.ResponseWriter, *http.Request) {
-	file, err := ioutil.ReadFile(filepath.Join(assetsUrl, "favicon.ico"))
-	if err != nil {
-		panic(err)
-	}
-	return func(writer http.ResponseWriter, request *http.Request) {
-		_, err := writer.Write(file)
-		if err != nil {
-			log.Print(err)
+			resposes.InternalServerError(writer, err)
 		}
 	}
 }
@@ -75,6 +44,7 @@ func (receiver *Server) handleUploading() func(http.ResponseWriter, *http.Reques
 		uploadedFiles := ""
 		formFiles := request.MultipartForm
 		files := formFiles.File
+		filesList := make([]fileStruct, 0)
 
 		for _, file := range files["files"] {
 			contentType := path.Ext(file.Filename)
@@ -84,26 +54,29 @@ func (receiver *Server) handleUploading() func(http.ResponseWriter, *http.Reques
 				continue
 			}
 
-			uploadedFiles, err = servces.SaveFile(openFile, contentType)
+			uploadedFiles, err = servces.SaveFile(writer, openFile, contentType)
 			if err != nil {
 				log.Printf("can't save file: %v", err)
 				continue
 			}
+			filesList = append(filesList, fileStruct{
+				FileName: uploadedFiles,
+			})
 		}
 
+		bytes, err := json.Marshal(filesList)
 		writer.Header().Set("Content-Type", "application/json")
-		_, err = writer.Write([]byte(uploadedFiles))
+		_, err = writer.Write(bytes)
 		if err != nil {
 			resposes.InternalServerError(writer, err)
 		}
 
-		http.Redirect(writer, request, "/upload", http.StatusFound)
 	}
 }
 
 func (receiver *Server) handleGetFile() func(http.ResponseWriter, *http.Request) {
 	return func(writer http.ResponseWriter, request *http.Request) {
-		fileName := strings.TrimPrefix(request.RequestURI, "/")
+		fileName := strings.TrimPrefix(request.RequestURI, "/api/files/")
 
 		file, err := ioutil.ReadFile(filepath.Join(MediaUrl, fileName))
 		if err != nil {

@@ -1,0 +1,24 @@
+###
+GET http://localhost:9999/api/health
+
+###
+
+GET http://localhost:9999/api/files/6b22eb80-92ca-49db-baca-a8b990ffb3a8.txt
+
+###
+
+POST http://localhost:9999/api/files/
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="files"; filename="testFile.txt"
+Content-Type: text/plain
+
+< testFile.txt
+
+--WebAppBoundary--
+Content-Disposition: form-data; name="files"; filename="testFile2.txt"
+Content-Type: text/plain
+
+< testFile2.txt
+###

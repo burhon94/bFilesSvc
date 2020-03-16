@@ -3,13 +3,12 @@ package servces
 import (
 	"errors"
 	"fmt"
-	"github.com/burhon94/json/cmd/writer"
 	"github.com/google/uuid"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 const MediaUrl = "web/media"
@@ -22,7 +21,7 @@ func EnvOrFlag(envName string, flag *string) (value string, ok bool) {
 	return os.LookupEnv(envName)
 }
 
-func SaveFile(file io.Reader, contentType string) (string, error) {
+func SaveFile(w http.ResponseWriter, file io.Reader, contentType string) (string, error) {
 	if len(contentType) <= 0 {
 		return "", errors.New("invalid extensions")
 	}
@@ -30,6 +29,13 @@ func SaveFile(file io.Reader, contentType string) (string, error) {
 	uuidV4 := uuid.New().String()
 	fileName := fmt.Sprintf("%s%s", uuidV4, contentType)
 	path := filepath.Join(MediaUrl, fileName)
+	_, err := os.Stat(MediaUrl)
+	if os.IsNotExist(err) {
+		err := os.Mkdir(MediaUrl, 0777)
+		if err != nil {
+			panic("can't create dir")
+		}
+	}
 
 	dstFile, err := os.Create(path)
 	if err != nil {
@@ -46,12 +52,5 @@ func SaveFile(file io.Reader, contentType string) (string, error) {
 		log.Printf("can't save file: %s, error: %v", file, err)
 	}
 
-	fPath := strings.Split(path, fileName)
-	pathFile := fPath[0]
-	uploadFile, err := writer.JsonFileUpload(pathFile)
-	if err != nil {
-		return "", errors.New("error while convert to JSON")
-	}
-
-	return uploadFile, nil
+	return fileName, nil
 }
